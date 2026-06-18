@@ -4,13 +4,12 @@ const missing = required.filter((key) => !String(process.env[key] || '').trim())
 const isVercelBuild = Boolean(process.env.VERCEL);
 
 if (missing.length && isVercelBuild) {
-  console.error(
-    `[env] Missing required env vars for deployment: ${missing.join(', ')}.`,
+  console.warn(
+    `[env] Missing env vars: ${missing.join(', ')}. Build will continue, but admin setup stays disabled until you add them in Vercel → Settings → Environment Variables.`,
   );
-  process.exit(1);
 }
 
-if (missing.length) {
+if (missing.length && !isVercelBuild) {
   console.warn(
     `[env] Missing optional local env vars: ${missing.join(', ')}. Build continues for UI work.`,
   );

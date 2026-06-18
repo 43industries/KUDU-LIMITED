@@ -21,7 +21,8 @@ npm run build
 
 1. Import this folder or connect your Git repository in Vercel.
 2. Add environment variable: `VITE_ADMIN_INVITE_CODE` (your secret admin invite code).
-3. Deploy — Vercel runs `npm ci` and `npm run build`, serving `dist/`.
+3. Redeploy after adding env vars so admin setup works at `/?admin-setup=1`.
+4. Deploy — Vercel runs `npm ci` and `npm run build`, serving `dist/`.
 
 ## First admin account
 
