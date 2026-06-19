@@ -26,9 +26,11 @@ npm run build
 
 ## First admin account
 
-1. Visit `/?admin-setup=1` (not linked publicly on the site).
+1. Visit **`/admin`** on your site (e.g. `https://yoursite.com/admin`) — bookmark this URL.
 2. Register with your invite code (must match `VITE_ADMIN_INVITE_CODE`).
-3. Only one admin account is allowed.
+3. Only one admin account is allowed. After that, `/admin` opens Sign In instead.
+
+Legacy URL `/?admin-setup=1` still works.
 
 ## Phase 1 limitations
 

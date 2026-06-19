@@ -227,20 +227,33 @@
   .footer-item { display: inline-flex; align-items: center; gap: 0.4rem; }
 
   /* ─── AUTH MODAL ─── */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(13,31,45,0.88); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(12px); }
+  body.modal-open { overflow: hidden; }
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(13,31,45,0.88); backdrop-filter: blur(12px);
+    display: flex; justify-content: center; align-items: flex-start;
+    padding: 1.25rem 1rem;
+    overflow-y: auto; overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
   .modal {
     background: linear-gradient(165deg, rgba(30,52,72,0.98), rgba(22,38,54,0.99));
     border: 1px solid var(--border); border-radius: 20px; padding: 2.5rem;
-    width: 100%; max-width: 440px; position: relative;
+    width: 100%; max-width: 440px; position: relative; flex-shrink: 0;
+    margin: auto 0;
+    max-height: calc(100vh - 2.5rem);
+    overflow-y: auto; overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05) inset;
   }
+  .modal--wide { max-width: 560px; }
   .modal-close {
-    position: absolute; top: 1rem; right: 1rem;
+    position: absolute; top: 1rem; right: 1rem; z-index: 2;
     background: rgba(255,255,255,0.06); border: 1px solid var(--border-light);
     border-radius: 8px; width: 32px; height: 32px;
-    color: var(--slate-light); font-size: 1rem; cursor: pointer;
+    color: var(--slate-light); font-size: 1.25rem; line-height: 1; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
+    transition: all 0.2s; padding: 0;
   }
   .modal-close:hover { color: var(--cream); background: rgba(201,168,76,0.15); border-color: var(--gold); }
   .modal h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 0.5rem; }
@@ -402,6 +415,10 @@
       right: auto; left: 50%; top: auto; bottom: -8px;
       transform: translateX(-50%) rotate(90deg);
     }
+    .modal-overlay { padding: 0.75rem; align-items: flex-start; }
+    .modal { padding: 1.75rem 1.25rem 1.5rem; max-height: calc(100dvh - 1.5rem); border-radius: 16px; }
+    .logo-img--modal { height: 72px; margin-bottom: 1rem; }
+    .form-row { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -537,8 +554,8 @@
 
 <!-- ═══════════════════════ LEGAL MODAL ═══════════════════════ -->
 <div class="modal-overlay" id="legalModal" style="display:none;">
-  <div class="modal" style="max-width:560px;max-height:80vh;overflow-y:auto;">
-    <button class="modal-close" onclick="closeLegal()" aria-label="Close"><span id="legal-close-icon"></span></button>
+  <div class="modal modal--wide">
+    <button type="button" class="modal-close" id="legalCloseBtn" aria-label="Close">×</button>
     <div id="legalContent"></div>
   </div>
 </div>
@@ -546,7 +563,7 @@
 <!-- ═══════════════════════ AUTH MODAL ═══════════════════════ -->
 <div class="modal-overlay" id="authModal" style="display:none;">
   <div class="modal">
-    <button class="modal-close" onclick="closeAuth()" aria-label="Close"><span id="auth-close-icon"></span></button>
+    <button type="button" class="modal-close" id="authCloseBtn" aria-label="Close">×</button>
     <div id="authContent"></div>
   </div>
 </div>
@@ -629,8 +646,14 @@ const ADMIN_INVITE_CODE = import.meta.env.VITE_ADMIN_INVITE_CODE || '';
 
 let currentUser = null;
 
-function isAdminSetupUrl() {
-  return new URLSearchParams(window.location.search).get('admin-setup') === '1';
+function isAdminAccessUrl() {
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  return path === '/admin' || new URLSearchParams(window.location.search).get('admin-setup') === '1';
+}
+
+function openAdminAccess() {
+  const hasAdmin = DB.users().some(u => u.role === 'admin');
+  openAuth(hasAdmin ? 'login' : 'register', hasAdmin ? '' : 'admin');
 }
 
 function uid() { return Math.random().toString(36).substr(2,9); }
@@ -645,11 +668,17 @@ function addNotif(userId, msg) {
 const LOGO_HTML = '<img src="/kudu-talent-logo.png" alt="Kudu Talent Logo - Talent. Trust. Impact." class="logo-img logo-img--modal">';
 
 function openAuth(mode='login', role='') {
-  if (mode === 'register' && role === 'admin' && !isAdminSetupUrl()) return;
+  if (mode === 'register' && role === 'admin' && !isAdminAccessUrl()) return;
   document.getElementById('authContent').innerHTML = mode==='login' ? loginForm(role) : registerForm(role);
   document.getElementById('authModal').style.display = 'flex';
+  document.body.classList.add('modal-open');
+  const modal = document.querySelector('#authModal .modal');
+  if (modal) modal.scrollTop = 0;
 }
-function closeAuth() { document.getElementById('authModal').style.display = 'none'; }
+function closeAuth() {
+  document.getElementById('authModal').style.display = 'none';
+  document.body.classList.remove('modal-open');
+}
 
 function loginForm() {
   return `
@@ -1592,8 +1621,14 @@ function openLegal(type) {
   };
   document.getElementById('legalContent').innerHTML = content[type] || '';
   document.getElementById('legalModal').style.display = 'flex';
+  document.body.classList.add('modal-open');
 }
-function closeLegal() { document.getElementById('legalModal').style.display = 'none'; }
+function closeLegal() {
+  document.getElementById('legalModal').style.display = 'none';
+  if (!document.getElementById('authModal') || document.getElementById('authModal').style.display === 'none') {
+    document.body.classList.remove('modal-open');
+  }
+}
 
 // Init register forms on modal render
 const origOpenAuth = openAuth;
@@ -1604,12 +1639,30 @@ window.openAuth = function(mode, role='') {
   ), 50);
 };
 
+// Expose handlers for inline onclick attributes (module scripts are not global by default)
+Object.assign(window, {
+  closeAuth, closeLegal, openLegal, logout, doLogin, doRegister, switchRegTab,
+  loadPage, markReviewed, addAdminNote, preselectSeeker, doForward, toggleJobStatus,
+  sendBroadcast, saveCompanyProfile, submitJob, shortlistCandidate, replyAdmin,
+  saveProfile, saveCVDetails, applyJob, handleCVUpload,
+});
+
+document.getElementById('authCloseBtn').addEventListener('click', closeAuth);
+document.getElementById('legalCloseBtn').addEventListener('click', closeLegal);
+
 // Close modals on backdrop click
 document.getElementById('authModal').addEventListener('click', function(e) {
   if(e.target===this) closeAuth();
 });
 document.getElementById('legalModal').addEventListener('click', function(e) {
   if(e.target===this) closeLegal();
+});
+
+document.getElementById('authModal').addEventListener('focusin', function(e) {
+  if (!e.target.matches('input, textarea, select')) return;
+  setTimeout(() => {
+    e.target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, 300);
 });
 
 function initStaticIcons() {
@@ -1628,8 +1681,6 @@ function initStaticIcons() {
   set('role-arrow-seeker', 'arrowRight', 'xs', 'cream');
   set('footer-flag-kenya', 'flag', 'xs', 'green');
   set('footer-flag-intl', 'globe', 'xs', 'blue');
-  set('legal-close-icon', 'close', 'xs', 'cream');
-  set('auth-close-icon', 'close', 'xs', 'cream');
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) logoutBtn.innerHTML = icon4d('arrowLeft', 'xs', 'cream', true) + ' Sign Out';
   document.querySelectorAll('.step-icon[data-icon]').forEach(el => {
@@ -1645,7 +1696,7 @@ initStaticIcons();
     if (!user) sessionStorage.removeItem('kudu_session');
     else { currentUser = user; loadDashboard(); return; }
   }
-  if (isAdminSetupUrl()) openAuth('register', 'admin');
+  if (isAdminAccessUrl()) openAdminAccess();
 })();
 </script>
 </body>
