@@ -879,7 +879,6 @@ function overview() {
   render(`
     <div class="dash-header"><h1>Admin Overview</h1><p>Platform management — KUDU Talent LTD</p></div>
     <div class="dash-body">
-      <div class="msg-success" style="margin-bottom:1.5rem;font-size:0.8rem">Platform note: Data is stored locally in this browser until the Supabase backend is connected in Phase 2.</div>
       <div class="stats-row">
         <div class="stat-card"><div class="stat-num">${seekers.length}</div><div class="stat-label">Job Seekers</div></div>
         <div class="stat-card"><div class="stat-num">${emps.length}</div><div class="stat-label">Employers</div></div>
@@ -1688,6 +1687,19 @@ function initStaticIcons() {
   });
 }
 initStaticIcons();
+
+function purgeLegacyDemo() {
+  const users = DB.users();
+  const demoIds = users
+    .filter(u => u.email === 'admin@kudutalent.com' && u.password === 'admin123')
+    .map(u => u.id);
+  if (!demoIds.length) return;
+  DB.saveUsers(users.filter(u => !demoIds.includes(u.id)));
+  const sid = sessionStorage.getItem('kudu_session');
+  if (sid && demoIds.includes(sid)) sessionStorage.removeItem('kudu_session');
+}
+
+purgeLegacyDemo();
 
 (function restoreSession() {
   const sid = sessionStorage.getItem('kudu_session');
